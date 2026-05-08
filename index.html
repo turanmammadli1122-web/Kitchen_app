@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Restoran.az</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --accent: #4747FF;
+  --accent-light: #eeeeff;
+  --red: #FF3B30;
+  --green: #34C759;
+  --orange: #FF9500;
+  --bg: #F5F5F5;
+  --white: #FFFFFF;
+  --text: #111111;
+  --text2: #666666;
+  --text3: #999999;
+  --border: #E8E8E8;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --font: 'Nunito', sans-serif;
+}
+
+html, body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  height: 100%; overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SPLASH ── */
+#splash {
+  position: fixed; inset: 0; background: var(--white);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 200; gap: 16px;
+  transition: opacity .45s ease, transform .45s ease;
+}
+#splash.hide { opacity:0; transform:scale(1.04); pointer-events:none; }
+
+.splash-logo-wrap {
+  box-shadow: 0 12px 40px rgba(71,71,255,0.4);
+  border-radius: 22px;
+}
+.splash-title {
+  font-size: 28px; font-weight: 800; color: var(--text);
+  letter-spacing: -0.5px;
+}
+.splash-sub { font-size: 14px; color: var(--text2); text-align: center; line-height: 1.5; max-width: 230px; }
+.splash-btn {
+  margin-top: 12px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 50px;
+  padding: 15px 48px; font-family: var(--font);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(71,71,255,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.splash-btn:active { transform: scale(.96); box-shadow: none; }
+
+/* ── APP SHELL ── */
+#app {
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  opacity: 0; transition: opacity .35s;
+}
+#app.show { opacity: 1; }
+
+/* ── PAGES ── */
+.page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.page.active { display: flex; }
+
+/* ── TOP BAR (main) ── */
+.topbar {
+  background: var(--white);
+  padding: 16px 16px 0;
+  flex-shrink: 0;
+}
+.topbar-row1 {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; margin-bottom: 12px;
+}
+.greeting { font-size: 22px; font-weight: 800; line-height: 1.2; }
+.greeting span { color: var(--text2); font-weight: 600; font-size: 14px; display: block; margin-bottom: 2px; }
+.notif-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--bg); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; position: relative; flex-shrink: 0;
+}
+.notif-dot {
+  width: 8px; height: 8px; background: var(--red);
+  border-radius: 50%; position: absolute; top: 8px; right: 8px;
+  border: 1.5px solid var(--white);
+}
+
+/* Search */
+.search-wrap {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.search-box {
+  flex: 1; display: flex; align-items: center;
+  background: var(--bg); border-radius: 50px;
+  padding: 10px 14px; gap: 8px;
+}
+.search-box input {
+  flex: 1; border: none; background: transparent;
+  font-family: var(--font); font-size: 14px; color: var(--text);
+  outline: none;
+}
+.search-box input::placeholder { color: var(--text3); }
+.search-icon { color: var(--text3); font-size: 15px; }
+.filter-btn {
+  width: 42px; height: 42px; background: var(--accent);
+  border-radius: 12px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; flex-shrink: 0;
+}
+
+/* Category pills */
+.cat-pills {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding-bottom: 12px; scrollbar-width: none;
+}
+.cat-pills::-webkit-scrollbar { display: none; }
+.pill {
+  flex-shrink: 0; padding: 7px 14px;
+  border-radius: 50px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .18s;
+  display: flex; align-items: center; gap: 5px;
+  border: 1.5px solid var(--border);
+  background: var(--white); color: var(--text2);
+}
+.pill.active {
+  background: var(--accent); color: #fff;
+  border-color: var(--accent);
+}
+.pill:active { transform: scale(.95); }
+
+/* Sub-filter (Uzaq/Yaxın/Qiymət) */
+.sub-pills {
+  display: flex; gap: 8px; padding: 8px 16px;
+  background: var(--white); border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.sub-pills::-webkit-scrollbar { display: none; }
+.sub-pill {
+  flex-shrink: 0; padding: 6px 14px;
+  border-radius: 50px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--border);
+  background: var(--white); color: var(--text2);
+  cursor: pointer; transition: all .18s;
+  display: flex; align-items: center; gap: 4px;
+}
+.sub-pill.active {
+  background: var(--accent-light); color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── SCROLL CONTENT ── */
+.scroll-content {
+  flex: 1; overflow-y: auto; padding-bottom: 80px;
+  scrollbar-width: none;
+}
+.scroll-content::-webkit-scrollbar { display: none; }
+
+/* Section header */
+.sec-hdr {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 16px 16px 10px;
+}
+.sec-hdr h2 { font-size: 16px; font-weight: 800; }
+.sec-hdr .live-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; color: var(--red);
+}
+.live-dot {
+  width: 7px; height: 7px; background: var(--red);
+  border-radius: 50%; animation: blink 1s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.sec-hdr .count { font-size: 12px; color: var(--text3); font-weight: 600; }
+.see-all { font-size: 12px; color: var(--accent); font-weight: 700; cursor: pointer; }
+
+/* ── HORIZONTAL SCROLL CARDS (live) ── */
+.h-scroll { display: flex; gap: 12px; padding: 0 16px 4px; overflow-x: auto; scrollbar-width: none; }
+.h-scroll::-webkit-scrollbar { display: none; }
+.live-card {
+  flex-shrink: 0; width: 160px; border-radius: var(--radius);
+  overflow: hidden; background: var(--white);
+  box-shadow: var(--shadow); cursor: pointer;
+  transition: transform .15s;
+  animation: fadeUp .4s ease both;
+}
+.live-card:active { transform: scale(.97); }
+.live-card-img {
+  width: 100%; height: 110px; object-fit: cover;
+  display: block; background: #ddd; position: relative;
+}
+.live-card-img-wrap { position: relative; }
+.live-tag {
+  position: absolute; top: 8px; left: 8px;
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 800; padding: 3px 8px;
+  border-radius: 20px; letter-spacing: .3px;
+}
+.live-card-body { padding: 8px 10px 10px; }
+.live-card-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-card-sub { font-size: 11px; color: var(--text2); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-card-row { display: flex; justify-content: space-between; align-items: center; }
+.rating-badge { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--orange); }
+.status-open { font-size: 10px; font-weight: 700; color: var(--green); }
+.status-closed { font-size: 10px; font-weight: 700; color: var(--red); }
+.dist-text { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+/* ── POPULAR GRID ── */
+.pop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px; }
+.pop-card {
+  border-radius: var(--radius); overflow: hidden;
+  background: var(--white); box-shadow: var(--shadow);
+  cursor: pointer; transition: transform .15s;
+  animation: fadeUp .4s ease both;
+}
+.pop-card:active { transform: scale(.97); }
+.pop-card-img { width:100%; height:100px; object-fit:cover; display:block; background:#ddd; }
+.pop-card-body { padding: 8px 10px 10px; }
+.pop-card-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.pop-card-sub { font-size: 11px; color: var(--text2); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── ALL LIST CARDS ── */
+.list-card {
+  display: flex; gap: 12px;
+  background: var(--white); margin: 0 16px 12px;
+  border-radius: var(--radius); padding: 12px;
+  box-shadow: var(--shadow); cursor: pointer;
+  transition: transform .15s;
+  animation: fadeUp .35s ease both;
+}
+.list-card:active { transform: scale(.98); }
+.list-card-img { width: 80px; height: 80px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; background: #ddd; }
+.list-card-body { flex: 1; min-width: 0; }
+.list-card-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.list-card-addr { font-size: 12px; color: var(--text2); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-card-status { font-size: 11px; font-weight: 700; }
+.list-card-status.open { color: var(--green); }
+.list-card-status.closed { color: var(--red); }
+.list-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.list-dist { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
+.list-rev { font-size: 11px; color: var(--text3); }
+.list-fav {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ── FAV PAGE ── */
+.page-header {
+  background: var(--white);
+  padding: 16px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.page-header h1 { font-size: 22px; font-weight: 800; }
+.fav-search-wrap { margin-top: 12px; display: flex; gap: 8px; }
+.fav-tabs {
+  display: flex; gap: 6px; padding: 10px 16px;
+  background: var(--white); border-bottom: 1px solid var(--border);
+}
+.fav-tab {
+  padding: 6px 14px; border-radius: 50px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--white); color: var(--text2);
+  display: flex; align-items: center; gap: 5px;
+  transition: all .18s;
+}
+.fav-tab.active {
+  background: var(--accent); color: #fff;
+  border-color: var(--accent);
+}
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 40px 20px;
+}
+.empty-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--accent-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+}
+.empty-title { font-size: 18px; font-weight: 800; text-align: center; }
+.empty-sub { font-size: 13px; color: var(--text2); text-align: center; line-height: 1.5; max-width: 220px; }
+
+/* ── RESTAURANT DETAIL ── */
+.detail-page { display: none; position: fixed; inset: 0; background: var(--white); z-index: 100; overflow-y: auto; flex-direction: column; }
+.detail-page.show { display: flex; }
+.detail-img-wrap { position: relative; flex-shrink: 0; }
+.detail-img { width: 100%; height: 240px; object-fit: cover; display: block; background: #ddd; }
+.detail-back {
+  position: absolute; top: 16px; left: 16px;
+  width: 36px; height: 36px; background: rgba(255,255,255,.9);
+  backdrop-filter: blur(8px); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; box-shadow: var(--shadow);
+}
+.detail-save {
+  position: absolute; top: 16px; right: 16px;
+  width: 36px; height: 36px; background: rgba(255,255,255,.9);
+  backdrop-filter: blur(8px); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; box-shadow: var(--shadow);
+}
+.detail-body { padding: 16px; flex: 1; }
+.detail-verified {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #e6f9f0; color: var(--green);
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; margin-bottom: 8px;
+}
+.detail-rating-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.detail-rating { font-size: 16px; font-weight: 800; color: var(--orange); display: flex; align-items: center; gap: 4px; }
+.detail-name { font-size: 22px; font-weight: 800; margin-bottom: 2px; line-height: 1.2; }
+.detail-status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.detail-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+.detail-meta-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.live-btn {
+  width: 100%; background: var(--red); color: #fff;
+  border: none; border-radius: var(--radius); padding: 14px;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; transition: opacity .2s;
+}
+.live-btn:active { opacity: .85; }
+.live-btn-right { font-size: 12px; opacity: .85; }
+
+/* 360 Rating */
+.rating360-title { font-size: 16px; font-weight: 800; margin-bottom: 14px; }
+.rating360-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+.rating-circle-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.rating-circle {
+  width: 54px; height: 54px; border-radius: 50%;
+  border: 4px solid;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800;
+}
+.rc-excellent { border-color: var(--green); color: var(--green); }
+.rc-good      { border-color: var(--orange); color: var(--orange); }
+.rc-great     { border-color: var(--accent); color: var(--accent); }
+.rc-ok        { border-color: #aaa; color: #aaa; }
+.rating-circle-lbl { font-size: 11px; color: var(--text2); font-weight: 600; text-align: center; }
+
+/* Action buttons */
+.action-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.call-btn {
+  width: 100%; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius); padding: 15px;
+  font-family: var(--font); font-size: 15px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity .2s;
+}
+.call-btn:active { opacity: .85; }
+.dir-btn {
+  width: 100%; background: var(--white); color: var(--text);
+  border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px;
+  font-family: var(--font); font-size: 15px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .2s;
+}
+.dir-btn:active { background: var(--bg); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--white); border-top: 1px solid var(--border);
+  display: flex; padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  z-index: 50;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  padding: 4px 8px; cursor: pointer; color: var(--text3);
+  transition: color .15s;
+}
+.nav-item.active { color: var(--accent); }
+.nav-ico { font-size: 22px; transition: transform .15s; }
+.nav-item.active .nav-ico { transform: scale(1.1); }
+.nav-lbl { font-size: 10px; font-weight: 700; }
+
+/* Skeleton */
+.skel { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 8px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo-wrap">
+    <svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="90" height="90" rx="22" fill="url(#splashGrad)"/>
+      <defs>
+        <linearGradient id="splashGrad" x1="0" y1="0" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6B6BFF"/>
+          <stop offset="100%" stop-color="#4747CC"/>
+        </linearGradient>
+      </defs>
+      <!-- K letter shape matching logo -->
+      <path d="M28 20 L28 70 L38 70 L38 50 L55 70 L67 70 L47 46 L65 20 L53 20 L38 40 L38 20 Z" fill="white" opacity="0.95"/>
+      <path d="M33 35 L45 48 L33 58 Z" fill="white" opacity="0.5"/>
+    </svg>
+  </div>
+  <div class="splash-title">My Kitchen</div>
+  <div class="splash-sub">Ətrafındakı ən yaxşı restoranları kəşf et, sifariş ver</div>
+  <button class="splash-btn" onclick="startApp()">Başla →</button>
+</div>
+
+<!-- DETAIL PAGE (full screen overlay) -->
+<div class="detail-page" id="detailPage">
+  <div class="detail-img-wrap">
+    <img class="detail-img" id="dImg" src="" alt=""/>
+    <div class="detail-back" onclick="closeDetail()">←</div>
+    <div class="detail-save" id="dSaveBtn" onclick="toggleDetailFav()">🤍</div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-verified">✓ Təsdiqlənmiş</div>
+    <div class="detail-rating-row">
+      <div class="detail-rating">⭐ <span id="dRating"></span></div>
+    </div>
+    <div class="detail-name" id="dName"></div>
+    <div class="detail-status-row">
+      <span id="dStatus"></span>
+      <span style="color:var(--text3);font-size:12px">·</span>
+      <span id="dCat" style="font-size:12px;color:var(--text2)"></span>
+    </div>
+    <div class="detail-desc" id="dDesc"></div>
+    <div class="detail-meta-row">
+      <span>📍</span><span id="dAddr" style="font-size:12px;color:var(--text2)"></span>
+    </div>
+    <div class="detail-meta-row">
+      <span>👥</span><span id="dRevCount" style="font-size:12px;color:var(--text2)"></span>
+    </div>
+
+    <button class="live-btn" onclick="openLive()">
+      <span>▶ Canlı izlə</span>
+      <span class="live-btn-right" id="dViewers"></span>
+    </button>
+
+    <div class="rating360-title">360° Reytinq</div>
+    <div class="rating360-grid">
+      <div class="rating-circle-wrap">
+        <div class="rating-circle rc-excellent" id="rc1"></div>
+        <div class="rating-circle-lbl">Əsillər</div>
+      </div>
+      <div class="rating-circle-wrap">
+        <div class="rating-circle rc-good" id="rc2"></div>
+        <div class="rating-circle-lbl">Xidmət</div>
+      </div>
+      <div class="rating-circle-wrap">
+        <div class="rating-circle rc-great" id="rc3"></div>
+        <div class="rating-circle-lbl">Məmnuniyyət</div>
+      </div>
+      <div class="rating-circle-wrap">
+        <div class="rating-circle rc-ok" id="rc4"></div>
+        <div class="rating-circle-lbl">Qiymət</div>
+      </div>
+    </div>
+
+    <div class="action-btns">
+      <button class="call-btn" id="dCallBtn">📞 Bizə zəng et</button>
+      <button class="dir-btn" id="dDirBtn">🧭 İstiqaməti göstər</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- ── HOME PAGE ── -->
+  <div class="page active" id="page-home">
+    <div class="topbar">
+      <div class="topbar-row1">
+        <div class="greeting">
+          <span>Salam,</span>
+          İstifadəçi! 👋
+        </div>
+        <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+      </div>
+      <div class="search-wrap">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Restoran axtar..." id="searchInput" oninput="onSearch(this.value)"/>
+        </div>
+        <div class="filter-btn" onclick="showFilter()">⚙️</div>
+      </div>
+      <div class="cat-pills" id="catPills">
+        <div class="pill active" onclick="filterCat(this,'all')">🍽 Hamısı</div>
+        <div class="pill" onclick="filterCat(this,'Restoran')">🍴 Restoran</div>
+        <div class="pill" onclick="filterCat(this,'Kafe')">☕ Kafe</div>
+        <div class="pill" onclick="filterCat(this,'Fast Food')">🍔 Fast Food</div>
+        <div class="pill" onclick="filterCat(this,'Pizza')">🍕 Pizza</div>
+        <div class="pill" onclick="filterCat(this,'Sushi')">🍣 Sushi</div>
+        <div class="pill" onclick="filterCat(this,'Milli')">🥘 Milli</div>
+      </div>
+    </div>
+
+    <div class="sub-pills">
+      <div class="sub-pill active" onclick="filterSub(this,'all')">📋 Hamısı</div>
+      <div class="sub-pill" onclick="filterSub(this,'near')">📍 Yaxın</div>
+      <div class="sub-pill" onclick="filterSub(this,'top')">⭐ Reytinq</div>
+      <div class="sub-pill" onclick="filterSub(this,'open')">✅ Açıq</div>
+      <div class="sub-pill" onclick="filterSub(this,'delivery')">🛵 Çatdırılma</div>
+    </div>
+
+    <div class="scroll-content" id="homeScroll">
+      <!-- Live section -->
+      <div class="sec-hdr">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="live-badge"><div class="live-dot"></div>İndi Canlı</div>
+        </div>
+        <span class="count" id="liveCount"></span>
+      </div>
+      <div class="h-scroll" id="liveScroll"></div>
+
+      <!-- Popular section -->
+      <div class="sec-hdr" style="margin-top:8px">
+        <h2>Yaxında ve Populyar</h2>
+        <span class="see-all" onclick="scrollToAll()">Hamısını gör</span>
+      </div>
+      <div class="pop-grid" id="popGrid"></div>
+
+      <!-- All section -->
+      <div class="sec-hdr" style="margin-top:8px" id="allHdr">
+        <h2>Hamısı</h2>
+        <span class="count" id="allCount"></span>
+      </div>
+      <div id="allList"></div>
+    </div>
+  </div>
+
+  <!-- ── MAP PAGE ── -->
+  <div class="page" id="page-map">
+    <div class="page-header">
+      <h1>Xəritə</h1>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:40px;color:var(--text2)">
+      <div style="font-size:64px">🗺️</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text)">Xəritə görünüşü</div>
+      <div style="font-size:13px;text-align:center;line-height:1.6">Restoran pinləri burada görünəcək.<br/>Google Maps inteqrasiyası üçün API key lazımdır.</div>
+      <div id="mapPinList" style="width:100%;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- ── FAV PAGE ── -->
+  <div class="page" id="page-fav">
+    <div class="page-header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h1>Sevimlilər</h1>
+        <div style="font-size:22px">🔔</div>
+      </div>
+      <div class="fav-search-wrap">
+        <div class="search-box" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Sevimlilərdə axtar..." id="favSearch" oninput="onFavSearch(this.value)"/>
+        </div>
+        <div class="filter-btn">⚙️</div>
+      </div>
+    </div>
+    <div class="fav-tabs">
+      <div class="fav-tab active" onclick="favTab(this,'all')">🍽 Hamısı</div>
+      <div class="fav-tab" onclick="favTab(this,'rest')">🍴 Restoran</div>
+      <div class="fav-tab" onclick="favTab(this,'cafe')">☕ Kafe</div>
+    </div>
+    <div id="favContent" style="flex:1;overflow-y:auto;padding-bottom:80px;scrollbar-width:none"></div>
+  </div>
+
+  <!-- ── PROFILE PAGE ── -->
+  <div class="page" id="page-profile">
+    <div style="padding:16px;background:var(--white);border-bottom:1px solid var(--border)">
+      <h1 style="font-size:22px;font-weight:800">Profil</h1>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--white);border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)">
+        <div style="width:60px;height:60px;background:var(--accent-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>
+        <div>
+          <div style="font-size:17px;font-weight:800">İstifadəçi</div>
+          <div style="font-size:13px;color:var(--text2)">istifadeci@email.com</div>
+        </div>
+      </div>
+      <div style="background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
+        ${['🔔 Bildirişlər','🌐 Dil (Azərbaycanca)','⭐ Reytinq ver','💬 Dəstək','🏢 Biznes profili','📍 Radius (5 km)','🔒 Məxfilik'].map(item=>`
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="">
+          <span style="font-size:14px;font-weight:600">${item}</span>
+          <span style="color:var(--text3)">›</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="navTo('home')">
+      <div class="nav-ico">🗺️</div>
+      <div class="nav-lbl">Kəşf et</div>
+    </div>
+    <div class="nav-item" id="nav-map" onclick="navTo('map')">
+      <div class="nav-ico">📍</div>
+      <div class="nav-lbl">Xəritə</div>
+    </div>
+    <div class="nav-item" id="nav-fav" onclick="navTo('fav')">
+      <div class="nav-ico">🤍</div>
+      <div class="nav-lbl">Sevimlilər</div>
+    </div>
+    <div class="nav-item" id="nav-profile" onclick="navTo('profile')">
+      <div class="nav-ico">👤</div>
+      <div class="nav-lbl">Profil</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor('#FFFFFF'); tg.setBackgroundColor('#F5F5F5'); }
+
+// ── DATA ──
+const DATA = [
+  { id:1, name:"Çinar Restoran", cat:"Restoran", addr:"Neftçilər pr. 14, Nərimanov", dist:"1 km", rating:4.5, reviews:312, price:3, open:true, delivery:true, viewers:95, img:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80", desc:"Pəm dəliyə müştəri dəliyə ilikləmənin mənpunsı. Fərənd, konpaya. Məntəpunsı. Çin və bölgürsünün kulinarsı ənsənsinbili birləşdirən mətbəxdir. Çtilklər əlincə Saydə il azın mətbəxindəki ünvan. Həm orada bulunan uniqal məkanda.", r1:60, r2:55, r3:80, r4:75 },
+  { id:2, name:"Mugham Club", cat:"Restoran", addr:"İçərişəhər, Qala küç. 9, Səbail", dist:"2 km", rating:4.9, reviews:547, price:4, open:true, delivery:false, viewers:142, img:"https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80", desc:"Azərbaycanın ən prestijli restoranlarından biri. Milli mətbəx və canlı muğam gecələri.", r1:90, r2:88, r3:95, r4:70 },
+  { id:3, name:"Baku Joe's", cat:"Fast Food", addr:"28 May küç. 7, Nəsimi", dist:"0.5 km", rating:4.3, reviews:891, price:1, open:true, delivery:true, viewers:38, img:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80", desc:"Bakının ən sevimli burger məkanı. Tam hissedilən dadlar, əlverişli qiymətlər.", r1:70, r2:65, r3:75, r4:90 },
+  { id:4, name:"Sakura Sushi", cat:"Sushi", addr:"Zərdabi 72A, Nərimanov", dist:"3 km", rating:4.6, reviews:203, price:3, open:false, delivery:true, viewers:0, img:"https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=600&q=80", desc:"Bakıda ən keyfiyyətli Yapon mətbəxi. Təzə balıq, klassik rolllar.", r1:85, r2:80, r3:88, r4:65 },
+  { id:5, name:"Dolce Vita", cat:"Kafe", addr:"H.Cavid 19, Xətai", dist:"1.5 km", rating:4.5, reviews:178, price:2, open:true, delivery:false, viewers:22, img:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=80", desc:"Sakit, rahat atmosfer. Ev bişirməsi tortlar, xüsusi qəhvə seçimləri.", r1:75, r2:85, r3:80, r4:78 },
+  { id:6, name:"Pizza House", cat:"Pizza", addr:"Əhmədli 4, Binəqədi", dist:"5 km", rating:4.1, reviews:432, price:2, open:true, delivery:true, viewers:55, img:"https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80", desc:"Napoli üslubunda odun sobası pizzaları. 20-dən çox çeşid.", r1:65, r2:70, r3:72, r4:85 },
+  { id:7, name:"Şirvan Evi", cat:"Milli", addr:"Zabrat şos. 3, Sabunçu", dist:"8 km", rating:4.7, reviews:289, price:2, open:true, delivery:false, viewers:78, img:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80", desc:"Ənənəvi Azərbaycan mətbəxi. Plov, xəngəl, doldurma kabablar.", r1:88, r2:82, r3:90, r4:80 },
+  { id:8, name:"Cloud Nine", cat:"Kafe", addr:"Əliağa Vahid 5, Yasamal", dist:"2 km", rating:4.2, reviews:98, price:2, open:true, delivery:false, viewers:15, img:"https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&q=80", desc:"Kitab oxumaq, iş görmək üçün ideal kafe. Sakit musiqi, yaxşı qəhvə.", r1:72, r2:78, r3:76, r4:82 },
+];
+
+let favorites = new Set();
+let activeCat = 'all';
+let activeSub = 'all';
+let searchQ   = '';
+let currentDetailId = null;
+
+// ── SPLASH ──
+function startApp() {
+  document.getElementById('splash').classList.add('hide');
+  const app = document.getElementById('app');
+  setTimeout(() => { app.classList.add('show'); renderHome(); }, 200);
+}
+
+// ── FILTER ──
+function filtered() {
+  return DATA.filter(r => {
+    const mSearch = r.name.toLowerCase().includes(searchQ.toLowerCase()) ||
+                    r.cat.toLowerCase().includes(searchQ.toLowerCase()) ||
+                    r.addr.toLowerCase().includes(searchQ.toLowerCase());
+    const mCat    = activeCat === 'all' || r.cat.includes(activeCat);
+    const mSub    = activeSub === 'all' ||
+                    (activeSub === 'open' && r.open) ||
+                    (activeSub === 'delivery' && r.delivery) ||
+                    (activeSub === 'top' && r.rating >= 4.5) ||
+                    (activeSub === 'near');
+    return mSearch && mCat && mSub;
+  });
+}
+
+// ── RENDER HOME ──
+function renderHome() {
+  const list = filtered();
+  const live = list.filter(r => r.viewers > 0);
+  document.getElementById('liveCount').textContent = live.length + ' yayım';
+
+  // Live horizontal scroll
+  document.getElementById('liveScroll').innerHTML = live.map((r,i) => `
+    <div class="live-card" style="animation-delay:${i*60}ms" onclick="openDetail(${r.id})">
+      <div class="live-card-img-wrap">
+        <img class="live-card-img" src="${r.img}" alt="${r.name}" loading="lazy"/>
+        <div class="live-tag">● LIVE</div>
+      </div>
+      <div class="live-card-body">
+        <div class="live-card-name">${r.name}</div>
+        <div class="live-card-sub">${r.addr}</div>
+        <div class="live-card-row">
+          <div class="rating-badge">⭐ ${r.rating}</div>
+          <span class="${r.open ? 'status-open' : 'status-closed'}">${r.open ? 'Açıq' : 'Bağlı'}</span>
+        </div>
+        <div class="dist-text">📍 ${r.dist} · Şovkat Alabbanov</div>
+      </div>
+    </div>`).join('');
+
+  // Popular grid (top 4 by rating)
+  const pop = [...list].sort((a,b) => b.rating - a.rating).slice(0,4);
+  document.getElementById('popGrid').innerHTML = pop.map((r,i) => `
+    <div class="pop-card" style="animation-delay:${i*70}ms" onclick="openDetail(${r.id})">
+      <div style="position:relative">
+        <img class="pop-card-img" src="${r.img}" alt="${r.name}" loading="lazy"/>
+        <div class="live-tag" style="background:${r.open?'var(--green)':'var(--red)'}">
+          ${r.open ? 'Açıq' : 'Bağlı'}
+        </div>
+      </div>
+      <div class="pop-card-body">
+        <div class="pop-card-name">${r.name}</div>
+        <div class="pop-card-sub">${r.addr}</div>
+        <div class="live-card-row">
+          <div class="rating-badge">⭐ ${r.rating}</div>
+          <span style="font-size:10px;color:var(--text3)">${r.dist}</span>
+        </div>
+        <div class="dist-text">📍 ${r.dist} · Şovkat Alabbanov</div>
+      </div>
+    </div>`).join('');
+
+  // All list
+  document.getElementById('allCount').textContent = list.length + ' restoran';
+  document.getElementById('allList').innerHTML = list.map((r,i) => `
+    <div class="list-card" style="animation-delay:${i*50}ms" onclick="openDetail(${r.id})">
+      <img class="list-card-img" src="${r.img}" alt="${r.name}" loading="lazy"/>
+      <div class="list-card-body">
+        <div class="list-card-name">${r.name}</div>
+        <div class="list-card-addr">${r.addr}</div>
+        <div class="list-card-status ${r.open ? 'open' : 'closed'}">${r.open ? 'Açıq' : 'Bağlı'}</div>
+        <div class="list-card-meta">
+          <div class="rating-badge" style="font-size:12px">⭐ ${r.rating}</div>
+          <div class="list-dist">📍 ${r.dist}</div>
+          <div class="list-rev">💬 ${r.reviews}</div>
+        </div>
+      </div>
+      <div class="list-fav" onclick="event.stopPropagation();toggleFavBtn(${r.id},this)">${favorites.has(r.id)?'❤️':'🤍'}</div>
+    </div>`).join('');
+}
+
+// ── DETAIL ──
+function openDetail(id) {
+  const r = DATA.find(x => x.id === id);
+  currentDetailId = id;
+  document.getElementById('dImg').src       = r.img;
+  document.getElementById('dName').textContent  = r.name;
+  document.getElementById('dRating').textContent = r.rating;
+  document.getElementById('dCat').textContent   = r.cat + ' · ' + '$'.repeat(r.price);
+  document.getElementById('dDesc').textContent  = r.desc;
+  document.getElementById('dAddr').textContent  = r.addr;
+  document.getElementById('dRevCount').textContent = r.reviews + ' rəy · ' + r.dist;
+  document.getElementById('dViewers').textContent  = r.viewers > 0 ? r.viewers + ' izləyici' : 'İndi canlı başlat';
+  document.getElementById('dStatus').innerHTML = `<span class="${r.open ? 'status-open' : 'status-closed'}" style="font-size:13px;font-weight:700">${r.open ? '✅ Açıq' : '❌ Bağlı'}</span>`;
+  document.getElementById('dSaveBtn').textContent = favorites.has(id) ? '❤️' : '🤍';
+  document.getElementById('rc1').textContent = r.r1+'%';
+  document.getElementById('rc2').textContent = r.r2+'%';
+  document.getElementById('rc3').textContent = r.r3+'%';
+  document.getElementById('rc4').textContent = r.r4+'%';
+  document.getElementById('dCallBtn').onclick = () => callRest(r);
+  document.getElementById('dDirBtn').onclick  = () => openDir(r);
+  const dp = document.getElementById('detailPage');
+  dp.classList.add('show');
+  dp.scrollTop = 0;
+}
+
+function closeDetail() {
+  document.getElementById('detailPage').classList.remove('show');
+}
+
+function toggleDetailFav() {
+  if (!currentDetailId) return;
+  if (favorites.has(currentDetailId)) favorites.delete(currentDetailId);
+  else favorites.add(currentDetailId);
+  document.getElementById('dSaveBtn').textContent = favorites.has(currentDetailId) ? '❤️' : '🤍';
+  renderHome(); renderFav();
+  // update nav fav icon
+  document.getElementById('nav-fav').querySelector('.nav-ico').textContent = favorites.size > 0 ? '❤️' : '🤍';
+}
+
+function toggleFavBtn(id, el) {
+  if (favorites.has(id)) { favorites.delete(id); el.textContent = '🤍'; }
+  else { favorites.add(id); el.textContent = '❤️'; }
+  document.getElementById('nav-fav').querySelector('.nav-ico').textContent = favorites.size > 0 ? '❤️' : '🤍';
+  if (document.getElementById('page-fav').classList.contains('active')) renderFav();
+}
+
+function callRest(r) {
+  const tel = '+994 12 555 00 00';
+  if (tg) tg.openLink('tel:' + tel.replace(/\s/g,''));
+  else window.open('tel:' + tel.replace(/\s/g,''));
+}
+function openDir(r) {
+  const url = `https://maps.google.com?q=${encodeURIComponent(r.addr+', Bakı')}`;
+  if (tg) tg.openLink(url); else window.open(url);
+}
+function openLive() {
+  if (tg) tg.showAlert('Canlı yayım tezliklə!');
+}
+function showFilter() {
+  if (tg) tg.showAlert('Filterlər tezliklə!');
+}
+
+// ── FAV ──
+function renderFav(query) {
+  const q = (query || '').toLowerCase();
+  const favList = DATA.filter(r => favorites.has(r.id) && (
+    !q || r.name.toLowerCase().includes(q) || r.addr.toLowerCase().includes(q)
+  ));
+  const el = document.getElementById('favContent');
+  if (favList.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">💙</div>
+      <div class="empty-title">Hələ sevimlilər yoxdur</div>
+      <div class="empty-sub">Bəyəndiyiniz obyektləri ürək işarəsinə basaraq saxlayın</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = favList.map((r,i) => `
+    <div class="list-card" style="animation-delay:${i*50}ms" onclick="openDetail(${r.id})">
+      <img class="list-card-img" src="${r.img}" alt="${r.name}" loading="lazy"/>
+      <div class="list-card-body">
+        <div class="list-card-name">${r.name}</div>
+        <div class="list-card-addr">${r.addr}</div>
+        <div class="list-card-status ${r.open ? 'open' : 'closed'}">${r.open ? 'Açıq' : 'Bağlı'}</div>
+        <div class="list-card-meta">
+          <div class="rating-badge" style="font-size:12px">⭐ ${r.rating}</div>
+          <div class="list-dist">📍 ${r.dist}</div>
+        </div>
+      </div>
+      <div class="list-fav" onclick="event.stopPropagation();toggleFavBtn(${r.id},this)">❤️</div>
+    </div>`).join('');
+}
+
+function onFavSearch(v) { renderFav(v); }
+function favTab(el, t) {
+  document.querySelectorAll('.fav-tab').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  renderFav();
+}
+
+// ── NAV ──
+function navTo(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'fav') renderFav();
+  if (tab === 'map') renderMapList();
+}
+
+function renderMapList() {
+  const el = document.getElementById('mapPinList');
+  el.innerHTML = DATA.slice(0,5).map(r => `
+    <div onclick="openDetail(${r.id})" style="display:flex;align-items:center;gap:10px;background:var(--white);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow)">
+      <span style="font-size:20px">📍</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700">${r.name}</div>
+        <div style="font-size:11px;color:var(--text2)">${r.dist} · ${r.addr}</div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--orange)">⭐${r.rating}</div>
+    </div>`).join('');
+}
+
+// ── SEARCH & FILTER ──
+function onSearch(v) { searchQ = v; renderHome(); }
+function filterCat(el, cat) {
+  document.querySelectorAll('#catPills .pill').forEach(c => c.classList.remove('active'));
+  el.classList.add('active'); activeCat = cat; renderHome();
+}
+function filterSub(el, sub) {
+  document.querySelectorAll('.sub-pill').forEach(c => c.classList.remove('active'));
+  el.classList.add('active'); activeSub = sub; renderHome();
+}
+function scrollToAll() {
+  document.getElementById('allHdr').scrollIntoView({ behavior:'smooth' });
+}
+</script>
+</body>
+</html>
